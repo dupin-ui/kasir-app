@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  KASIR
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  name         String
+  username     String        @unique
+  password     String
+  role         Role          @default(KASIR)
+  createdAt    DateTime      @default(now())
+  transactions Transaction[]
+}
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  products Product[]
+}
+
+model Product {
+  id         Int       @id @default(autoincrement())
+  name       String
+  sku        String    @unique
+  price      Int
+  stock      Int       @default(0)
+  minStock   Int       @default(5)
+  imageUrl   String?
+  categoryId Int?
+  category   Category? @relation(fields: [categoryId], references: [id])
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  items      TransactionItem[]
+}
+
+model Member {
+  id           Int           @id @default(autoincrement())
+  name         String
+  phone        String        @unique
+  createdAt    DateTime      @default(now())
+  transactions Transaction[]
+}
+
+model Setting {
+  id                    Int @id @default(1)
+  memberDiscountPercent Int @default(0)
+}
+
+model Transaction {
+  id              Int               @id @default(autoincrement())
+  invoiceNo       String            @unique
+  cashierId       Int
+  cashier         User              @relation(fields: [cashierId], references: [id])
+  memberId        Int?
+  member          Member?           @relation(fields: [memberId], references: [id])
+  subtotalAmount  Int               @default(0)
+  discountPercent Int               @default(0)
+  discountAmount  Int               @default(0)
+  totalAmount     Int
+  paidAmount      Int
+  changeAmount    Int
+  paymentMethod   String            @default("TUNAI") // TUNAI | ONLINE
+  paymentRef      String?           @unique // order_id Midtrans (hanya untuk ONLINE)
+  paymentType     String? // jenis bayar dari Midtrans: qris, gopay, shopeepay, dll
+  createdAt       DateTime          @default(now())
+  items           TransactionItem[]
+}
+
+model TransactionItem {
+  id            Int         @id @default(autoincrement())
+  transactionId Int
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  productId     Int
+  product       Product     @relation(fields: [productId], references: [id])
+  qty           Int
+  price         Int
+  subtotal      Int
+}
