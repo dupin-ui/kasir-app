@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { prisma } from "@/lib/prisma";
 
 const ALLOWED = ["image/jpeg", "image/png", "image/webp"];
 const MAX_SIZE = 2 * 1024 * 1024; // 2MB
@@ -24,12 +23,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "Ukuran gambar maksimal 2MB" }, { status: 400 });
   }
 
-  const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
-  const filename = `${Date.now()}-${Math.floor(Math.random() * 10000)}.${ext}`;
-  const dir = path.join(process.cwd(), "public", "uploads");
+  // Simpan gambar di database, lalu kembalikan alamat untuk menampilkannya
+  const image = await prisma.image.create({
+    data: { mimeType: file.type, data: Buffer.from(await file.arrayBuffer()) },
+  });
 
-  await mkdir(dir, { recursive: true });
-  await writeFile(path.join(dir, filename), Buffer.from(await file.arrayBuffer()));
-
-  return NextResponse.json({ url: `/uploads/${filename}` });
+  return NextResponse.json({ url: `/api/images/${image.id}` });
 }

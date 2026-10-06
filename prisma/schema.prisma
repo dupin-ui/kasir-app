@@ -86,3 +86,12 @@ model TransactionItem {
   price         Int
   subtotal      Int
 }
+
+// Gambar produk disimpan di database supaya tetap ada di Railway dan Vercel
+// (filesystem di sana tidak permanen / read-only)
+model Image {
+  id        Int      @id @default(autoincrement())
+  mimeType  String
+  data      Bytes    @db.LongBlob
+  createdAt DateTime @default(now())
+}
